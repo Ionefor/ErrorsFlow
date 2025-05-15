@@ -1,4 +1,6 @@
-﻿namespace ErrorsFlow.Models;
+﻿using System;
+
+namespace ErrorsFlow.Models;
 
 public sealed record Error
 {
@@ -18,7 +20,7 @@ public sealed record Error
         InvalidField = invalidField;
         Timestamp = DateTime.UtcNow;
     }
-    
+
     internal static Error CreateError(
         string code, string message, ErrorType type, string? invalidField = null)
     {
@@ -27,7 +29,7 @@ public sealed record Error
             StackTrace = Environment.StackTrace
         };
     }
-    
+
     public string Serialize()
     {
         return string.Join(Separator, Code, Message, Type);
