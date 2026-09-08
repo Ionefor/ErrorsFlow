@@ -1,54 +1,75 @@
-﻿using System;
+using System.Collections.ObjectModel;
 
 namespace ErrorsFlow.Models;
 
+/// <summary>
+/// Неизменяемое структурированное описание ожидаемой ошибки.
+/// Не содержит данных транспорта, исключений и stack trace.
+/// </summary>
 public sealed record Error
 {
-    public const string Separator = "||";
+    /// <summary>Стабильный машинно-читаемый код ошибки.</summary>
     public string Code { get; }
-    public string Message { get; }
-    public ErrorType Type { get; }
-    public string? InvalidField { get; }
-    public DateTime Timestamp { get; init;}
-    public string? StackTrace { get; init; }
 
-    private Error(string code, string message, ErrorType type, string? invalidField = null)
+    /// <summary>Безопасное fallback-сообщение об ошибке.</summary>
+    public string Message { get; }
+
+    /// <summary>Общая категория ошибки.</summary>
+    public ErrorType Type { get; }
+
+    /// <summary>Поле или ресурс, к которому относится ошибка, если оно известно.</summary>
+    public string? Target { get; }
+
+    /// <summary>Неизменяемые дополнительные безопасные данные ошибки.</summary>
+    public IReadOnlyDictionary<string, string?> Metadata { get; }
+
+    private Error(
+        string code,
+        string message,
+        ErrorType type,
+        string? target,
+        IReadOnlyDictionary<string, string?>? metadata)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(code);
+        ArgumentException.ThrowIfNullOrWhiteSpace(message);
+
         Code = code;
         Message = message;
         Type = type;
-        InvalidField = invalidField;
-        Timestamp = DateTime.UtcNow;
+        Target = target;
+        Metadata = CreateMetadata(metadata);
     }
 
-    internal static Error CreateError(
-        string code, string message, ErrorType type, string? invalidField = null)
+    /// <summary>
+    /// Создаёт структурированную ошибку.
+    /// </summary>
+    /// <param name="code">Стабильный машинно-читаемый код ошибки.</param>
+    /// <param name="message">Безопасное fallback-сообщение.</param>
+    /// <param name="type">Категория ошибки.</param>
+    /// <param name="target">Необязательное поле или ресурс.</param>
+    /// <param name="metadata">Необязательные безопасные дополнительные данные.</param>
+    /// <returns>Новая неизменяемая ошибка.</returns>
+    public static Error Create(
+        string code,
+        string message,
+        ErrorType type,
+        string? target = null,
+        IReadOnlyDictionary<string, string?>? metadata = null) =>
+        new(code, message, type, target, metadata);
+
+    /// <summary>
+    /// Преобразует одну ошибку в непустой список ошибок.
+    /// </summary>
+    /// <returns>Список, содержащий текущую ошибку.</returns>
+    public ErrorList ToErrorList() => ErrorList.From(this);
+
+    private static IReadOnlyDictionary<string, string?> CreateMetadata(
+        IReadOnlyDictionary<string, string?>? metadata)
     {
-        return new Error(code, message, type, invalidField)
-        {
-            StackTrace = Environment.StackTrace
-        };
-    }
+        var values = metadata is null
+            ? new Dictionary<string, string?>(StringComparer.Ordinal)
+            : new Dictionary<string, string?>(metadata, StringComparer.Ordinal);
 
-    public string Serialize()
-    {
-        return string.Join(Separator, Code, Message, Type);
-    }
-
-    public static Error Deserialize(string serialized)
-    {
-        var parts = serialized.Split(Separator);
-
-        if (parts.Length < 3) throw new ArgumentException("Invalid serialized format");
-
-        if (!Enum.TryParse<ErrorType>(parts[2], out var type))
-            throw new ArgumentException("Invalid serialized format");
-
-        return new Error(parts[0], parts[1], type);
-    }
-
-    public ErrorList ToErrorList()
-    {
-        return new ErrorList([this]);
+        return new ReadOnlyDictionary<string, string?>(values);
     }
 }
