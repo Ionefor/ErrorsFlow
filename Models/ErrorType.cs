@@ -1,10 +1,29 @@
-﻿namespace ErrorsFlow.Models;
+namespace ErrorsFlow.Models;
 
+/// <summary>
+/// Общие категории ожидаемых ошибок.
+/// На границе приложения могут использоваться для выбора транспорта ответа, например HTTP-статуса.
+/// </summary>
 public enum ErrorType
 {
+    /// <summary>Ошибка входных данных или нарушенного правила валидации.</summary>
     Validation,
+
+    /// <summary>Запрошенный ресурс не найден.</summary>
     NotFound,
+
+    /// <summary>Известная ошибка выполнения, не подходящая под более точную категорию.</summary>
     Failure,
+
+    /// <summary>Состояние конфликтует с выполняемой операцией.</summary>
     Conflict,
-    InternalServer
+
+    /// <summary>Непредвиденная ошибка на внешней границе приложения.</summary>
+    InternalServer,
+
+    /// <summary>Пользователь не аутентифицирован или предоставил недействительные данные доступа.</summary>
+    Unauthorized,
+
+    /// <summary>Аутентифицированному пользователю запрещено выполнение операции.</summary>
+    Forbidden
 }
