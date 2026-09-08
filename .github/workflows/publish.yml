@@ -8,6 +8,8 @@ on:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       
@@ -21,6 +23,12 @@ jobs:
 
       - name: Pack
         run: dotnet pack --configuration Release --no-restore -p:Version=${GITHUB_REF#refs/tags/v}
+
+      - name: NuGet login
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: Lonefor
         
       - name: Publish
-        run: dotnet nuget push bin/Release/ErrorsFlow.${GITHUB_REF#refs/tags/v}.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        run: dotnet nuget push bin/Release/ErrorsFlow.${GITHUB_REF#refs/tags/v}.nupkg --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
